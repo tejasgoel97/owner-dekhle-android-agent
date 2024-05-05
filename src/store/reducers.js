@@ -1,5 +1,5 @@
 // src/store/reducers.ts
-import { SET_USER_INFO } from "./actionTypes";
+import { RESET_USER_INFO, SET_USER_INFO } from "./actionTypes";
 const initialState = {
   name: "",
   dealerPhoneNumber: "",
@@ -19,6 +19,9 @@ export const userInfoReducer = (state = initialState, action) => {
         ...state,
         ...action.payload,
       };
+    case RESET_USER_INFO: {
+      return { ...state, ...initialState };
+    }
     default:
       return state;
   }

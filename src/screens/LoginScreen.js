@@ -6,148 +6,104 @@ import axios from "axios";
 import { verifyOTP } from "../services/dealerServices";
 import { useDispatch } from "react-redux";
 import { setUserInfo } from "../store/actions";
+import api from "../services/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginScreen = ({ navigation }) => {
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const dispatch = useDispatch();
-
-  const handlePhoneInput = (text) => {
-    if (/^\d*$/.test(text)) {
-      setPhoneNumber(text);
-    }
+  const handleUsernameInput = (text) => {
+    setUsername(text);
   };
 
-  const handleOtpInput = (text) => {
-    if (/^\d*$/.test(text)) {
-      setOtp(text);
-    }
+  const handlePasswordInput = (text) => {
+    setPassword(text);
   };
 
-  const sendOtp = async () => {
+  const handleLogin = async () => {
     try {
-      const response = await axios.post(
-        "http://192.168.1.8:5000/api/auth/sendOTP",
-        { phoneNumber }
-      );
+      const response = await api.post("/auth/email/login", {
+        phoneNumber: username,
+        email: username,
+        password,
+      });
       if (response.data.success) {
+        const userInfo = response.data.userInfo;
+        const serializedState = JSON.stringify(userInfo);
+        console.log({ serializedState });
+        await AsyncStorage.setItem("user-info", serializedState);
+        dispatch(setUserInfo(userInfo));
+        // Navigate to home screen or dashboard
+        // navigation.navigate("HomeScreen");
+      } else {
+        // This part may not be reached if backend properly uses HTTP status codes
         Toast.show({
-          type: "success",
-          text1: "OTP Sent",
+          type: "error",
+          text1: "Login Failed",
           text2: response.data.message,
         });
-        setOtpSent(true);
-      } else {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to send OTP. Please try again.",
-        });
       }
     } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Network Error",
-        text2: "Unable to connect to the server.",
-      });
-      console.error("Send OTP Error:", error);
-    }
-  };
-
-  const verifyOtp = async () => {
-    try {
-      const result = await verifyOTP(phoneNumber, otp);
-      console.log(result);
-      if (result.success) {
-        Toast.show({
-          type: "success",
-          text1: "OTP Verified",
-          text2: "You have successfully logged in.",
-        });
-        dispatch(setUserInfo(result.userInfo));
-
-        navigation.navigate("HomeScreen");
-      } else {
+      if (error.response && error.response.status === 401) {
+        // Handle 401 specifically
         Toast.show({
           type: "error",
-          text1: "Verification Failed",
-          text2: "Incorrect OTP, please try again.",
+          text1: "Authentication Failed",
+          text2: error.response.data.message,
         });
+      } else {
+        // General error handling
+        Toast.show({
+          type: "error",
+          text1: "Login Error",
+          text2: "An unexpected error occurred during login",
+        });
+        console.log("Login error:", error);
       }
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Verification Error",
-        text2: "An error occurred while verifying OTP.",
-      });
-      console.error("Verify OTP Error:", error);
     }
-  };
-
-  const resetPhoneNumber = () => {
-    // setPhoneNumber("");
-    // setOtp("");
-    setOtpSent(false);
   };
 
   return (
     <View style={styles.container}>
-      {!otpSent ? (
-        <View>
-          <Text h4>Enter your phone number</Text>
-          <Input
-            placeholder="Phone Number"
-            value={phoneNumber}
-            onChangeText={handlePhoneInput}
-            keyboardType="numeric"
-          />
-          <Button title="Send OTP" onPress={sendOtp} />
-        </View>
-      ) : (
-        <View>
-          <Text h4>Enter OTP</Text>
-          <Text style={styles.phoneNumberText}>Phone: {phoneNumber}</Text>
-          <Input
-            placeholder="OTP"
-            value={otp}
-            onChangeText={handleOtpInput}
-            keyboardType="numeric"
-          />
-          <Button title="Verify OTP" onPress={verifyOtp} />
-          <Button title="Resend OTP" onPress={sendOtp} type="clear" />
-          <TouchableOpacity onPress={resetPhoneNumber}>
-            <Text style={styles.changePhoneText}>Change Phone Number</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View>
+        <Text>Enter your Email/Password</Text>
+        <Input
+          placeholder="Username"
+          value={username}
+          onChangeText={handleUsernameInput}
+          autoCapitalize="none"
+        />
+      </View>
+
+      <View>
+        <Text>Enter your password</Text>
+        <Input
+          placeholder="Password"
+          value={password}
+          onChangeText={handlePasswordInput}
+          secureTextEntry={true}
+        />
+        <Button title="Login" onPress={handleLogin} />
+      </View>
+
       <TouchableOpacity onPress={() => navigation.navigate("RegisterScreen")}>
         <Text style={styles.registerText}>Not a registered user? Register</Text>
       </TouchableOpacity>
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
     padding: 10,
   },
-  phoneNumberText: {
-    fontSize: 16,
-    marginVertical: 10,
-  },
-  changePhoneText: {
-    fontSize: 16,
-    marginTop: 10,
-    textAlign: "center",
-  },
   registerText: {
     fontSize: 16,
     marginTop: 20,
     textAlign: "center",
-    color: "blue", // Style as per your app theme
+    color: "blue",
   },
 });
 

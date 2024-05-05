@@ -18,28 +18,35 @@ const Stack = createNativeStackNavigator();
 
 const AuthNavigator = () => {
   const userInfo = useSelector((state) => state.userInfo); // Adjust according to your state structure
-  console.log("userInfo", userInfo);
   const dispatch = useDispatch();
   const isAuthenticated = userInfo && userInfo.id; // Check if the user is considered authenticated
-  let asyncUserInfo = AsyncStorage.getItem("userInfo");
-  console.log("async", asyncUserInfo);
   useEffect(() => {
     loadUserInfo();
   }, []);
   const loadUserInfo = async () => {
     try {
-      const serializedState = await AsyncStorage.getItem("userInfo");
+      const serializedState = await AsyncStorage.getItem("user-info");
+
       if (serializedState === null) {
         return undefined; // No state in AsyncStorage
       }
       const userInfoData = JSON.parse(serializedState);
+      console.log("async", userInfoData);
       if (
         !userInfoData.token ||
-        !userInfo.name ||
-        !userInfo.phoneNumber ||
-        !userInfo.dealerName ||
-        !userInfo.dealerId
+        !userInfoData.name ||
+        !userInfoData.phoneNumber ||
+        !userInfoData.dealerPhoneNumber ||
+        !userInfoData.dealerId
       ) {
+        console.log("Not Valid Data ...returning to orignal Login");
+        console.log({
+          token: userInfoData.token,
+          name: userInfoData.name,
+          phoneNumber: userInfoData.phoneNumber,
+          dealerName: userInfoData.dealerName,
+          dealerId: userInfoData.dealerId,
+        });
         return;
       }
       dispatch(setUserInfo(userInfoData));

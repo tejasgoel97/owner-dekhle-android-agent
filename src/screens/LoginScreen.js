@@ -1,11 +1,17 @@
 import React, { useState } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Button, Text, Input } from "@rneui/themed";
+import Toast from "react-native-toast-message";
+import axios from "axios";
+import { verifyOTP } from "../services/dealerServices";
+import { useDispatch } from "react-redux";
+import { setUserInfo } from "../store/actions";
 
 const LoginScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const dispatch = useDispatch();
 
   const handlePhoneInput = (text) => {
     if (/^\d*$/.test(text)) {
@@ -19,19 +25,69 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const sendOtp = () => {
-    console.log("OTP sent to:", phoneNumber);
-    setOtpSent(true);
+  const sendOtp = async () => {
+    try {
+      const response = await axios.post(
+        "http://192.168.1.8:5000/api/auth/sendOTP",
+        { phoneNumber }
+      );
+      if (response.data.success) {
+        Toast.show({
+          type: "success",
+          text1: "OTP Sent",
+          text2: response.data.message,
+        });
+        setOtpSent(true);
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to send OTP. Please try again.",
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Network Error",
+        text2: "Unable to connect to the server.",
+      });
+      console.error("Send OTP Error:", error);
+    }
   };
 
-  const verifyOtp = () => {
-    console.log("OTP verified for:", phoneNumber);
-    navigation.navigate("HomeScreen");
+  const verifyOtp = async () => {
+    try {
+      const result = await verifyOTP(phoneNumber, otp);
+      console.log(result);
+      if (result.success) {
+        Toast.show({
+          type: "success",
+          text1: "OTP Verified",
+          text2: "You have successfully logged in.",
+        });
+        dispatch(setUserInfo(result.userInfo));
+
+        navigation.navigate("HomeScreen");
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Verification Failed",
+          text2: "Incorrect OTP, please try again.",
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Verification Error",
+        text2: "An error occurred while verifying OTP.",
+      });
+      console.error("Verify OTP Error:", error);
+    }
   };
 
   const resetPhoneNumber = () => {
-    setPhoneNumber("");
-    setOtp("");
+    // setPhoneNumber("");
+    // setOtp("");
     setOtpSent(false);
   };
 

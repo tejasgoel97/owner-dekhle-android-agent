@@ -1,40 +1,71 @@
-import React from "react";
-import { View, FlatList, StyleSheet } from "react-native";
-import { ListItem, Avatar, Text } from "@rneui/themed";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+} from "react-native";
+import { ListItem, Avatar } from "@rneui/themed";
+import axios from "axios";
+import { useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
 
 const MyAgentsScreen = () => {
-  const agents = [
-    {
-      sNo: 1,
-      name: "John Doe",
-      phoneNumber: "123-456-7890",
-      dateJoined: "2022-01-01",
-    },
-    {
-      sNo: 2,
-      name: "Jane Smith",
-      phoneNumber: "987-654-3210",
-      dateJoined: "2022-05-15",
-    },
-    {
-      sNo: 3,
-      name: "Alice Johnson",
-      phoneNumber: "555-678-1234",
-      dateJoined: "2022-07-20",
-    },
-    // More agents can be added here
-  ];
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const navigation = useNavigation();
+  const token = useSelector((state) => state.userInfo.token); // Accessing token from Redux state
+
+  useEffect(() => {
+    const fetchAgents = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          "http://192.168.1.8:5000/api/agent/myAgents",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (response.data.success) {
+          setAgents(response.data.agents);
+        } else {
+          setError("Failed to fetch data");
+        }
+      } catch (err) {
+        setError("An error occurred while fetching data");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgents();
+  }, []);
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#0000ff" />;
+  }
+
+  if (error) {
+    return <Text>{error}</Text>;
+  }
 
   const renderItem = ({ item }) => (
-    <ListItem bottomDivider>
+    <ListItem
+      onPress={() =>
+        navigation.navigate("AgentDetailsScreen", { agentId: item._id })
+      }
+      bottomDivider
+    >
       <Avatar source={{ uri: "https://via.placeholder.com/150" }} rounded />
       <ListItem.Content>
         <ListItem.Title>{item.name}</ListItem.Title>
         <ListItem.Subtitle>{item.phoneNumber}</ListItem.Subtitle>
-        <View style={styles.details}>
-          <Text>Date Joined: {item.dateJoined}</Text>
-          <Text>S.No: {item.sNo}</Text>
-        </View>
+        <Text>Date Joined: {item.dateJoined}</Text>
       </ListItem.Content>
     </ListItem>
   );
@@ -44,7 +75,7 @@ const MyAgentsScreen = () => {
       <FlatList
         data={agents}
         renderItem={renderItem}
-        keyExtractor={(item) => item.sNo.toString()}
+        keyExtractor={(item) => item._id.toString()}
       />
     </View>
   );
@@ -53,11 +84,6 @@ const MyAgentsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  details: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 5,
   },
 });
 

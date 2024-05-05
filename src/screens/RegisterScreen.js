@@ -3,6 +3,8 @@ import { View, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { Button, Text, Input } from "@rneui/themed";
 import { getDealerName, register, verifyOTP } from "../services/dealerServices";
 import Toast from "react-native-toast-message";
+import { useDispatch } from "react-redux";
+import { setUserInfo } from "../store/actions";
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState("");
@@ -15,6 +17,7 @@ const RegisterScreen = ({ navigation }) => {
   const [isVerified, setIsVerified] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
+  const dispatch = useDispatch();
 
   const handleInputChange = (value, setState) => {
     setState(value);
@@ -100,6 +103,7 @@ const RegisterScreen = ({ navigation }) => {
 
     try {
       const result = await verifyOTP(phoneNumber, otp);
+      console.log(result);
       console.log("reesult");
       if (result.success) {
         Toast.show({
@@ -107,6 +111,8 @@ const RegisterScreen = ({ navigation }) => {
           text1: "OTP Verified",
           text2: "Your phone number has been verified successfully.",
         });
+        dispatch(setUserInfo(result.userInfo));
+
         navigation.navigate("HomeScreen"); // Or any other screen post-verification
       } else {
         Toast.show({

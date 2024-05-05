@@ -39,5 +39,14 @@ const verifyOTP = async (phoneNumber, otp) => {
     // throw error;
   }
 };
+const sendOTPLogin = async (phoneNumber) => {
+  try {
+    const response = await api.post("/auth/register", phoneNumber);
+    return response.data;
+  } catch (error) {
+    console.error("Error during registration:", error);
+    throw error;
+  }
+};
 
 export { getDealerName, register, verifyOTP };

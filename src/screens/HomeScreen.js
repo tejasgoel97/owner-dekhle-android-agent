@@ -16,6 +16,11 @@ const HomeScreen = ({ navigation }) => {
         title="My Agents Screen"
         onPress={() => navigation.navigate("MyAgentsScreen")}
       />
+      <Button
+        title="My Points Screen"
+        onPress={() => navigation.navigate("MyPointsScreen")}
+      />
+
       {/* <Button
         title="My Points"
         onPress={() => navigation.navigate("MyPointsScreen")}

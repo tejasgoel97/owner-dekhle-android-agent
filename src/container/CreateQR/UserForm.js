@@ -3,23 +3,51 @@ import { View, StyleSheet } from "react-native";
 import { Input, Button } from "@rneui/themed";
 import RNPickerSelect from "react-native-picker-select";
 import { useNavigation } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
+import { useSelector } from "react-redux";
+import api from "../../services/api";
 
-const UserForm = () => {
+const UserForm = ({ scannedCodes }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [selectedOption, setSelectedOption] = useState("");
   const navigation = useNavigation(); // Get navigation object using hook
+  const token = useSelector((state) => state.userInfo.token); // Accessing token from Redux state
 
-  const handleCreateTempId = () => {
+  const handleCreateTempId = async () => {
     // Logic to create a temporary ID can be simulated here
     const tempId = "TID123"; // Example temporary ID
     const status = "Pending"; // Example status
     console.log("Creating Temp ID with:", selectedOption, phoneNumber);
     // Navigate to TempIDScreen with parameters
-    navigation.navigate("TempIDScreen", {
-      tempId: tempId,
+    const body = {
       phoneNumber: phoneNumber,
-      status: status,
-    });
+      QRIDS: scannedCodes,
+    };
+    try {
+      const response = await api.post("/QR/create-temp-id", body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.data.success) {
+        navigation.navigate("TempIDScreen", {
+          tempId: tempId,
+          phoneNumber: phoneNumber,
+          status: status,
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Failed to create TempID",
+        });
+      }
+    } catch (error) {
+      console.log(error);
+      Toast.show({
+        type: "error",
+        text1: "Failed to create TempID",
+      });
+    }
   };
 
   return (

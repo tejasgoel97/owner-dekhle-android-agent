@@ -12,14 +12,17 @@ import axios from "axios";
 import { useSelector } from "react-redux";
 import Toast from "react-native-toast-message";
 import RNPickerSelect from "react-native-picker-select";
+import api from "../services/api";
 
 const TempIDScreen = ({ route }) => {
   const { tempId } = route.params;
   const [tempDetails, setTempDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
+  const [newStatus, setNewStatus] = useState("");
+  const [statusChanged, setStatusChanged] = useState(false);
   const token = useSelector((state) => state.userInfo.token);
-
+  console.log({ tempId });
   useEffect(() => {
     fetchTempDetails();
   }, [tempId, token]);
@@ -27,13 +30,10 @@ const TempIDScreen = ({ route }) => {
   const fetchTempDetails = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        `http://localhost:5000/api/QR/get-temp-id`,
-        {
-          params: { tempId },
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await api.get(`/QR/get-temp-id?tempId=${tempId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log(response.data);
       if (response.data) {
         setTempDetails(response.data);
         setStatus(response.data.status);
@@ -45,6 +45,7 @@ const TempIDScreen = ({ route }) => {
         });
       }
     } catch (error) {
+      console.log(error);
       Toast.show({
         type: "error",
         text1: "Network Error",
@@ -57,12 +58,13 @@ const TempIDScreen = ({ route }) => {
 
   const getStatusOptions = () => {
     switch (status) {
-      case "Pending":
-        return [{ label: "Cancelled", value: "Cancelled" }];
-      case "Submitted":
+      case "PENDING":
+        console.log("here");
+        return [{ label: "CANCELLED", value: "CANCELLED" }];
+      case "SUBMITTED":
         return [
-          { label: "Cancelled", value: "Cancelled" },
-          { label: "Completed", value: "Completed" },
+          { label: "CANCELLED", value: "CANCELLED" },
+          { label: "COMPLETED", value: "COMPLETED" },
         ];
       default:
         return [];
@@ -86,7 +88,7 @@ const TempIDScreen = ({ route }) => {
           </Text>
           <Text style={styles.infoText}>Status: {tempDetails.status}</Text>
           <RNPickerSelect
-            onValueChange={(value) => setStatus(value)}
+            onValueChange={(value) => setNewStatus(value)}
             items={getStatusOptions()}
             placeholder={{ label: "Change status...", value: null }}
             style={pickerSelectStyles}

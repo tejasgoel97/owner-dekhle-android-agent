@@ -18,7 +18,7 @@ const getDealerName = async (phoneNumber) => {
 // Assuming api is set up for Axios; you can replace it with fetch if not using Axios
 const register = async (data) => {
   try {
-    const response = await api.post("/auth/register", data);
+    const response = await api.post("/auth/email/register", data);
     return response.data;
   } catch (error) {
     console.error("Error during registration:", error);

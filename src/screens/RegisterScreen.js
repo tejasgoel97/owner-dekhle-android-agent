@@ -17,6 +17,7 @@ const RegisterScreen = ({ navigation }) => {
   const [isVerified, setIsVerified] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
+  const [email, setEmail] = useState("");
   const dispatch = useDispatch();
 
   const handleInputChange = (value, setState) => {
@@ -152,6 +153,7 @@ const RegisterScreen = ({ navigation }) => {
       aadharNo,
       dealerPhoneNumber,
       dealerId,
+      email,
     };
 
     try {
@@ -172,6 +174,22 @@ const RegisterScreen = ({ navigation }) => {
         });
       }
     } catch (error) {
+      if (error.response && error.response.status === 409) {
+        // Handle 409 specifically
+        Toast.show({
+          type: "error",
+          text1: "Already Registered",
+          text2: error.response.data.message,
+        });
+      }
+      if (error.response && error.response.status === 400) {
+        // Handle 409 specifically
+        Toast.show({
+          type: "error",
+          text1: "Failed To register",
+          text2: error.response.data.message,
+        });
+      }
       Toast.show({
         type: "error",
         text1: "Registration Error",
@@ -194,6 +212,11 @@ const RegisterScreen = ({ navigation }) => {
         value={phoneNumber}
         onChangeText={(text) => handleInputChange(text, setPhoneNumber)}
         keyboardType="numeric"
+      />
+      <Input
+        placeholder="Email"
+        value={email}
+        onChangeText={(text) => handleInputChange(text, setEmail)}
       />
       <Input
         placeholder="Father's Name"

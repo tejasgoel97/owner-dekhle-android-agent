@@ -64,7 +64,7 @@ const CreateQRScreen = () => {
         onClose={() => setIsDialogVisible(false)}
         onCodeScanned={handleQRCodeScanned}
       />
-      <UserForm />
+      <UserForm scannedCodes={scannedCodes} />
     </View>
   );
 };

@@ -3,6 +3,7 @@ import { View, StyleSheet, ActivityIndicator } from "react-native";
 import TempIdList from "../container/CreateQR/TempIdList";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import api from "../services/api";
 
 const TempIDListScreen = () => {
   const [tempIds, setTempIds] = useState([]);
@@ -13,14 +14,11 @@ const TempIDListScreen = () => {
     const fetchTempIds = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(
-          "http://192.168.1.8:5000/api/QR/get-my-temp-ids",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await api.get("/QR/get-my-temp-ids", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (response.data.success) {
           setTempIds(
             response.data.tempIDs.map((id) => ({

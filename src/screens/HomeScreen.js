@@ -6,15 +6,6 @@ import { useDispatch } from "react-redux";
 import { clearUserInfo } from "../store/actions";
 
 const HomeScreen = ({ navigation }) => {
-  async function printAsync() {
-    const serializedState = await AsyncStorage.getItem("user-info");
-
-    if (serializedState === null) {
-      return undefined; // No state in AsyncStorage
-    }
-    const userInfoData = JSON.parse(serializedState);
-    console.log("async", userInfoData);
-  }
   const dispatch = useDispatch();
 
   const handleLogout = async () => {

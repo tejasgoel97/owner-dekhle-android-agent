@@ -8,13 +8,11 @@ const ScanQRDialog = ({ isVisible, onClose, onCodeScanned }) => {
   const [scanned, setScanned] = useState(false);
   const [text, setText] = useState("Not yet scanned");
 
-  const askForCameraPermission = async () => {
-    const { status } = await BarCodeScanner.requestPermissionsAsync();
-    setHasPermission(status === "granted");
-  };
-
   useEffect(() => {
-    askForCameraPermission();
+    (async () => {
+      const { status } = await BarCodeScanner.requestPermissionsAsync();
+      setHasPermission(status === "granted");
+    })();
     setScanned(false);
   }, []);
 
@@ -38,16 +36,12 @@ const ScanQRDialog = ({ isVisible, onClose, onCodeScanned }) => {
         ) : hasPermission === false ? (
           <Text>No access to camera</Text>
         ) : (
-          <View style={styles.cameraContainer}>
-            <BarCodeScanner
-              onBarCodeScanned={handleBarCodeScanned}
-              style={StyleSheet.absoluteFillObject}
-            />
-          </View>
+          <BarCodeScanner
+            onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+            style={StyleSheet.absoluteFillObject}
+          />
         )}
         <Text style={styles.maintext}>{text}</Text>
-
-        {/* {scanned && <Text style={styles.scannedText}>Scanned!</Text>} */}
       </View>
     </Dialog>
   );
@@ -63,17 +57,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    alignItems: "center",
+    flexDirection: "column",
     justifyContent: "center",
+    padding: 10,
+    position: "relative", // Ensure the camera view fits within the dialog
   },
-  cameraContainer: {
-    width: "100%",
-    height: "100%",
-    overflow: "hidden",
-  },
-  scannedText: {
-    marginTop: 10,
-    fontSize: 18,
+  maintext: {
+    fontSize: 16,
+    margin: 20,
+    color: "black",
   },
 });
 

@@ -23,20 +23,27 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/owner-dekhle-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/owner-dekhle-splash.jpg"
     },
     "plugins": [
       [
-        "expo-camera",
+        "expo-barcode-scanner",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-          "recordAudioAndroid": true
+          "cameraPermission": "Allow access to camera."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "54fbf640-56ab-4310-9da4-abbf571ab139"
+      }
+    }
   }
 }

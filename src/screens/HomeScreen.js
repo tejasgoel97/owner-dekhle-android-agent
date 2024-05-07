@@ -18,7 +18,7 @@ const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem("userInfo"); // Clear AsyncStorage
+    await AsyncStorage.removeItem("user-info");
     Toast.show({
       type: "info",
       text1: "LoggedOut",

@@ -29,12 +29,12 @@ const UserForm = ({ scannedCodes }) => {
           Authorization: `Bearer ${token}`,
         },
       });
+      console.log(response.data.tempID);
       if (response.data.success) {
-        navigation.navigate("TempIDScreen", {
-          tempId: tempId,
-          phoneNumber: phoneNumber,
-          status: status,
-        });
+        navigation.goBack();
+        setTimeout(() => {
+          navigation.navigate("TempIDListScreen");
+        }, 50);
       } else {
         Toast.show({
           type: "error",

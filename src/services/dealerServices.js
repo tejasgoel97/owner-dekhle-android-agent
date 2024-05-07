@@ -5,7 +5,7 @@ const getDealerName = async (phoneNumber) => {
     const response = await api.get("/auth/dealerName", {
       params: { phoneNumber },
     });
-    console.log(response.data);
+    console.log("res", response.data);
     return response.data;
   } catch (error) {
     // Handle error

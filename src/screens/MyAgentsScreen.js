@@ -10,6 +10,7 @@ import { ListItem, Avatar } from "@rneui/themed";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 import { useSelector } from "react-redux";
+import api from "../services/api";
 
 const MyAgentsScreen = () => {
   const [agents, setAgents] = useState([]);
@@ -22,14 +23,11 @@ const MyAgentsScreen = () => {
     const fetchAgents = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(
-          "http://192.168.1.8:5000/api/agent/myAgents",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await api.get("/agent/myAgents", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (response.data.success) {
           setAgents(response.data.agents);
         } else {
@@ -69,7 +67,13 @@ const MyAgentsScreen = () => {
       </ListItem.Content>
     </ListItem>
   );
-
+  if (agents.length === 0) {
+    return (
+      <View style={styles.noAgentsContainer}>
+        <Text>No agents found.</Text>
+      </View>
+    );
+  }
   return (
     <View style={styles.container}>
       <FlatList
@@ -84,6 +88,11 @@ const MyAgentsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  noAgentsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

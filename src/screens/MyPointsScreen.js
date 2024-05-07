@@ -1,176 +1,42 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
-import { Icon } from "@rneui/themed";
-import { Badge } from "@rneui/themed";
+import axios from "axios";
+import api from "../services/api";
+import { useSelector } from "react-redux";
 
 const MyPointsScreen = () => {
   const [transactions, setTransactions] = useState([]);
   const [totalPoints, setTotalPoints] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const token = useSelector((state) => state.userInfo.token); // Accessing token from Redux state
 
   useEffect(() => {
-    const fetchedTransactions = [
-      {
-        transactionType: "ADDED",
-        amount: 150,
-        reason: "Bonus for extra deliveries",
-        vehicleType: "Two Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Achieved top delivery speeds consistently.",
-      },
-      {
-        transactionType: "REMOVED",
-        amount: 75,
-        reason: "Maintenance fee",
-        vehicleType: "Three Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Quarterly vehicle maintenance.",
-      },
-      {
-        transactionType: "ADDED",
-        amount: 50,
-        reason: "Referral bonus",
-        vehicleType: "Two Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Referred Jane Smith.",
-      },
-      {
-        transactionType: "REMOVED",
-        amount: 30,
-        reason: "Traffic violation fine",
-        vehicleType: "Heavy Vehicle",
-        transactionDate: new Date().toISOString(),
-        comments: "Ran a red light during delivery hours.",
-      },
-      {
-        transactionType: "ADDED",
-        amount: 100,
-        reason: "Holiday work bonus",
-        vehicleType: "Four Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Worked on a national holiday.",
-      },
-      {
-        transactionType: "ADDED",
-        amount: 200,
-        reason: "Year-end bonus",
-        vehicleType: "Heavy Vehicle",
-        transactionDate: new Date().toISOString(),
-        comments: "Exceptional performance throughout the year.",
-      },
-      {
-        transactionType: "REMOVED",
-        amount: 50,
-        reason: "Penalty for late starts",
-        vehicleType: "Four Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Multiple late starts detected this month.",
-      },
-      {
-        transactionType: "ADDED",
-        amount: 50,
-        reason: "Referral bonus",
-        vehicleType: "Two Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Referred Jane Smith.",
-      },
-      {
-        transactionType: "REMOVED",
-        amount: 30,
-        reason: "Traffic violation fine",
-        vehicleType: "Heavy Vehicle",
-        transactionDate: new Date().toISOString(),
-        comments: "Ran a red light during delivery hours.",
-      },
-      {
-        transactionType: "ADDED",
-        amount: 100,
-        reason: "Holiday work bonus",
-        vehicleType: "Four Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Worked on a national holiday.",
-      },
-      {
-        transactionType: "ADDED",
-        amount: 200,
-        reason: "Year-end bonus",
-        vehicleType: "Heavy Vehicle",
-        transactionDate: new Date().toISOString(),
-        comments: "Exceptional performance throughout the year.",
-      },
-      {
-        transactionType: "REMOVED",
-        amount: 50,
-        reason: "Penalty for late starts",
-        vehicleType: "Four Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Multiple late starts detected this month.",
-      },
-      {
-        transactionType: "ADDED",
-        amount: 50,
-        reason: "Referral bonus",
-        vehicleType: "Two Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Referred Jane Smith.",
-      },
-      {
-        transactionType: "REMOVED",
-        amount: 30,
-        reason: "Traffic violation fine",
-        vehicleType: "Heavy Vehicle",
-        transactionDate: new Date().toISOString(),
-        comments: "Ran a red light during delivery hours.",
-      },
-      {
-        transactionType: "ADDED",
-        amount: 100,
-        reason: "Holiday work bonus",
-        vehicleType: "Four Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Worked on a national holiday.",
-      },
-      {
-        transactionType: "ADDED",
-        amount: 200,
-        reason: "Year-end bonus",
-        vehicleType: "Heavy Vehicle",
-        transactionDate: new Date().toISOString(),
-        comments: "Exceptional performance throughout the year.",
-      },
-      {
-        transactionType: "REMOVED",
-        amount: 50,
-        reason: "Penalty for late starts",
-        vehicleType: "Four Wheeler",
-        transactionDate: new Date().toISOString(),
-        comments: "Multiple late starts detected this month.",
-      },
-    ];
-    setTransactions(fetchedTransactions);
-    setTotalPoints(
-      fetchedTransactions.reduce(
-        (acc, curr) =>
-          curr.transactionType === "ADDED"
-            ? acc + curr.amount
-            : acc - curr.amount,
-        0
-      )
-    );
+    const fetchTransactions = async () => {
+      try {
+        const response = await api.get("/mydata/myPoints", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setTransactions(response.data.transactions);
+        setTotalPoints(response.data.totalPoints);
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+        // Handle errors, such as by showing a notification to the user
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTransactions();
   }, []);
 
   const renderTransactionItem = ({ item }) => (
     <View style={styles.transactionItem}>
       <View style={styles.dateAmountContainer}>
-        {/* Update date format to include time */}
         <Text style={styles.dateText}>
-          {new Date(item.transactionDate).toLocaleString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          })}
+          {new Date(item.transactionDate).toLocaleString()}
         </Text>
         <Text
           style={
@@ -187,6 +53,14 @@ const MyPointsScreen = () => {
       <Text style={styles.commentsText}>{item.comments}</Text>
     </View>
   );
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

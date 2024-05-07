@@ -1,10 +1,19 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+} from "react-native";
 import { Button, Text, Input } from "@rneui/themed";
 import { getDealerName, register, verifyOTP } from "../services/dealerServices";
 import Toast from "react-native-toast-message";
 import { useDispatch } from "react-redux";
 import { setUserInfo } from "../store/actions";
+import api from "../services/api";
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState("");
@@ -18,6 +27,11 @@ const RegisterScreen = ({ navigation }) => {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loadingVerify, setLoadingVerify] = useState(false);
+  const [loadingSendOTP, setLoadingSendOTP] = useState(false);
+  const [loadingVerifyOTP, setLoadingVerifyOTP] = useState(false);
+
   const dispatch = useDispatch();
 
   const handleInputChange = (value, setState) => {
@@ -25,9 +39,16 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const verifyDealer = async () => {
+    console.log("Handle Verify");
+    setLoadingVerify(true);
+
     try {
-      const result = await getDealerName(dealerPhoneNumber);
-      if (result.success) {
+      const response = await api.get("/auth/dealerName", {
+        params: { phoneNumber: dealerPhoneNumber },
+      });
+      console.log(response);
+      const result = response.data;
+      if (result?.success) {
         setDealerName(result.data.name);
         setDealerId(result.data.id);
         setIsVerified(true);
@@ -44,16 +65,25 @@ const RegisterScreen = ({ navigation }) => {
         });
       }
     } catch (error) {
-      //   console.error("Error verifying dealer phone number:", error);
-      Toast.show({
-        type: "error",
-        text1: "Dealer Phone Number",
-        text2: "Error during verification",
-      });
+      console.log(error);
+      if (error.response && error.response?.status === 404) {
+        Toast.show({
+          type: "error",
+          text1: "Dealer Not Found",
+          text2: error.response.data.message,
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Dealer Phone Number",
+          text2: "Error during verification",
+        });
+      }
+    } finally {
+      setLoadingVerify(false);
     }
   };
   const validateInputs = () => {
-    // Check for empty fields
     if (
       !name.trim() ||
       !phoneNumber.trim() ||
@@ -69,7 +99,6 @@ const RegisterScreen = ({ navigation }) => {
       return false;
     }
 
-    // Check mobile number length
     if (phoneNumber.length !== 10 || isNaN(phoneNumber)) {
       Toast.show({
         type: "error",
@@ -79,7 +108,6 @@ const RegisterScreen = ({ navigation }) => {
       return false;
     }
 
-    // Check Aadhar number length
     if (aadharNo.length !== 12 || isNaN(aadharNo)) {
       Toast.show({
         type: "error",
@@ -92,7 +120,7 @@ const RegisterScreen = ({ navigation }) => {
     return true;
   };
 
-  const handleRegistration = async () => {
+  const HandleVerifyOTP = async () => {
     if (!otp || otp.length === 0) {
       Toast.show({
         type: "info",
@@ -101,9 +129,14 @@ const RegisterScreen = ({ navigation }) => {
       });
       return;
     }
+    setLoadingVerifyOTP(true);
 
     try {
-      const result = await verifyOTP(phoneNumber, otp);
+      const response = await api.post("/auth/email/verifyotp", {
+        phoneNumber,
+        otp,
+      });
+      const result = response.data;
       console.log(result);
       console.log("reesult");
       if (result.success) {
@@ -113,8 +146,6 @@ const RegisterScreen = ({ navigation }) => {
           text2: "Your phone number has been verified successfully.",
         });
         dispatch(setUserInfo(result.userInfo));
-
-        navigation.navigate("HomeScreen"); // Or any other screen post-verification
       } else {
         Toast.show({
           type: "error",
@@ -128,13 +159,14 @@ const RegisterScreen = ({ navigation }) => {
         text1: "Verification Error",
         text2: "An error occurred during OTP verification.",
       });
-      console.error("OTP verification failed:", error);
+      console.log("OTP verification failed:", error);
+    } finally {
+      setLoadingVerifyOTP(false);
     }
   };
   const handleOTPSend = async () => {
     if (!validateInputs()) {
-      // Check if inputs are valid
-      return; // Stop the registration process if validation fails
+      return;
     }
 
     if (!isVerified) {
@@ -145,6 +177,7 @@ const RegisterScreen = ({ navigation }) => {
       });
       return;
     }
+    setLoadingSendOTP(true);
 
     const registrationData = {
       name,
@@ -154,6 +187,7 @@ const RegisterScreen = ({ navigation }) => {
       dealerPhoneNumber,
       dealerId,
       email,
+      password,
     };
 
     try {
@@ -165,7 +199,6 @@ const RegisterScreen = ({ navigation }) => {
           text2: "You have been registered successfully.",
         });
         setOtpSent(true);
-        // navigation.navigate("HomeScreen");
       } else {
         Toast.show({
           type: "error",
@@ -174,8 +207,8 @@ const RegisterScreen = ({ navigation }) => {
         });
       }
     } catch (error) {
+      console.log(error.response);
       if (error.response && error.response.status === 409) {
-        // Handle 409 specifically
         Toast.show({
           type: "error",
           text1: "Already Registered",
@@ -183,7 +216,6 @@ const RegisterScreen = ({ navigation }) => {
         });
       }
       if (error.response && error.response.status === 400) {
-        // Handle 409 specifically
         Toast.show({
           type: "error",
           text1: "Failed To register",
@@ -195,42 +227,99 @@ const RegisterScreen = ({ navigation }) => {
         text1: "Registration Error",
         text2: "An error occurred during registration. Please try again.",
       });
-      console.error("Registration failed:", error);
+      console.log("Registration failed:", error);
+    } finally {
+      setLoadingSendOTP(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text h4>Register</Text>
-      <Input
-        placeholder="Name"
-        value={name}
-        onChangeText={(text) => handleInputChange(text, setName)}
-      />
-      <Input
-        placeholder="Phone Number"
-        value={phoneNumber}
-        onChangeText={(text) => handleInputChange(text, setPhoneNumber)}
-        keyboardType="numeric"
-      />
-      <Input
-        placeholder="Email"
-        value={email}
-        onChangeText={(text) => handleInputChange(text, setEmail)}
-      />
-      <Input
-        placeholder="Father's Name"
-        value={fatherName}
-        onChangeText={(text) => handleInputChange(text, setFatherName)}
-      />
-      <Input
-        placeholder="Aadhar Number"
-        value={aadharNo}
-        onChangeText={(text) => handleInputChange(text, setAadharNo)}
-        keyboardType="numeric"
-      />
-      <View style={styles.dealerPhoneContainer}>
-        <View style={{ flex: 1 }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text h4>Register</Text>
+        <Input
+          placeholder="Name"
+          value={name}
+          onChangeText={(text) => handleInputChange(text, setName)}
+          returnKeyType="next"
+          onSubmitEditing={() => {
+            this.phoneNumberInput.focus();
+          }}
+          blurOnSubmit={false}
+        />
+        <Input
+          placeholder="Phone Number"
+          value={phoneNumber}
+          onChangeText={(text) => handleInputChange(text, setPhoneNumber)}
+          keyboardType="numeric"
+          ref={(input) => {
+            this.phoneNumberInput = input;
+          }}
+          returnKeyType="next"
+          onSubmitEditing={() => {
+            this.emailInput.focus();
+          }}
+          blurOnSubmit={false}
+        />
+        <Input
+          placeholder="Email"
+          value={email}
+          onChangeText={(text) => handleInputChange(text, setEmail)}
+          ref={(input) => {
+            this.emailInput = input;
+          }}
+          returnKeyType="next"
+          onSubmitEditing={() => {
+            this.passwordInput.focus();
+          }}
+          blurOnSubmit={false}
+        />
+        <Input
+          placeholder="Password"
+          value={password}
+          onChangeText={(text) => handleInputChange(text, setPassword)}
+          secureTextEntry={true}
+          ref={(input) => {
+            this.passwordInput = input;
+          }}
+          returnKeyType="next"
+          onSubmitEditing={() => {
+            this.fatherNameInput.focus();
+          }}
+          blurOnSubmit={false}
+        />
+        <Input
+          placeholder="Father's Name"
+          value={fatherName}
+          onChangeText={(text) => handleInputChange(text, setFatherName)}
+          ref={(input) => {
+            this.fatherNameInput = input;
+          }}
+          returnKeyType="next"
+          onSubmitEditing={() => {
+            this.aadharNoInput.focus();
+          }}
+          blurOnSubmit={false}
+        />
+        <Input
+          placeholder="Aadhar Number"
+          value={aadharNo}
+          onChangeText={(text) => handleInputChange(text, setAadharNo)}
+          keyboardType="numeric"
+          ref={(input) => {
+            this.aadharNoInput = input;
+          }}
+          returnKeyType="next"
+          onSubmitEditing={() => {
+            this.dealerPhoneNumberInput.focus();
+          }}
+          blurOnSubmit={false}
+        />
+        <View style={styles.dealerPhoneContainer}>
           <Input
             placeholder="Dealer Phone Number"
             value={dealerPhoneNumber}
@@ -239,39 +328,53 @@ const RegisterScreen = ({ navigation }) => {
             }
             keyboardType="numeric"
             containerStyle={{ flex: 1 }}
+            ref={(input) => {
+              this.dealerPhoneNumberInput = input;
+            }}
+            returnKeyType="done"
+          />
+          <Button
+            title={isVerified ? "Verified" : "Verify"}
+            onPress={verifyDealer}
+            buttonStyle={isVerified ? styles.verifiedButton : {}}
+            disabled={isVerified}
+            loading={loadingVerify}
           />
         </View>
-
-        <Button
-          title={isVerified ? "Verified" : "Verify"}
-          onPress={verifyDealer}
-          buttonStyle={isVerified ? styles.verifiedButton : {}}
-          disabled={isVerified}
-        />
-      </View>
-      {dealerName ? (
-        <Text style={styles.dealerNameText}>Dealer Name: {dealerName}</Text>
-      ) : null}
-      {otpSent && (
-        <Input
-          placeholder="Enter OTP"
-          value={otp}
-          onChangeText={(text) => handleInputChange(text, setOtp)}
-          keyboardType="numeric"
-        />
-      )}
-      {otpSent ? (
-        <Button title="Register" onPress={handleRegistration} />
-      ) : (
-        <Button title="Send OTP" onPress={handleOTPSend} />
-      )}
-    </View>
+        {dealerName && (
+          <Text style={styles.dealerNameText}>Dealer Name: {dealerName}</Text>
+        )}
+        {otpSent && (
+          <Input
+            placeholder="Enter OTP"
+            value={otp}
+            onChangeText={(text) => handleInputChange(text, setOtp)}
+            keyboardType="numeric"
+            returnKeyType="go"
+            onSubmitEditing={HandleVerifyOTP}
+          />
+        )}
+        {otpSent ? (
+          <Button
+            title="Verify OTP"
+            onPress={HandleVerifyOTP}
+            loading={loadingVerifyOTP}
+          />
+        ) : (
+          <Button
+            title="Send OTP"
+            onPress={handleOTPSend}
+            loading={loadingSendOTP}
+          />
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     padding: 10,
   },
@@ -279,7 +382,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottoml: 10,
+    marginBottom: 10,
   },
   verifiedButton: {
     backgroundColor: "green",
@@ -290,5 +393,4 @@ const styles = StyleSheet.create({
     color: "green",
   },
 });
-
 export default RegisterScreen;

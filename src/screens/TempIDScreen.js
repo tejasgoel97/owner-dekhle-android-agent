@@ -1,31 +1,93 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useLayoutEffect } from "react";
 import {
   ScrollView,
   RefreshControl,
   View,
   StyleSheet,
   Platform,
+  Alert,
 } from "react-native";
 import { Text, Button, Card } from "@rneui/themed";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import axios from "axios";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Toast from "react-native-toast-message";
 import RNPickerSelect from "react-native-picker-select";
 import api from "../services/api";
 
-const TempIDScreen = ({ route }) => {
+const TempIDScreen = ({ route, navigation }) => {
   const { tempId } = route.params;
   const [tempDetails, setTempDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-  const [newStatus, setNewStatus] = useState("");
-  const [statusChanged, setStatusChanged] = useState(false);
+
   const token = useSelector((state) => state.userInfo.token);
-  console.log({ tempId });
   useEffect(() => {
     fetchTempDetails();
   }, [tempId, token]);
+
+  const confirmAction = (action) => {
+    Alert.alert(
+      "Confirm Action",
+      `Are you sure you want to ${action.toLowerCase()} this ID?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Confirm",
+          onPress: () =>
+            action === "COMPLETE" ? completeAction() : cancelAction(),
+        },
+      ]
+    );
+  };
+
+  const completeAction = async () => {
+    // Implement the complete action
+    console.log("Completing Action");
+    const body = {
+      tempId,
+    };
+    try {
+      const response = await api.post("/QR/change-tempid-to-complete", body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response.data);
+      if (response.data.success) {
+        Toast.show({
+          type: "info",
+          text1: "COMPLETED QR",
+          text2: "COMPLETED QR",
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Failed to create QR data",
+        });
+      }
+    } catch (error) {
+      console.log(error);
+      if (error.response && error.response.status === 400) {
+        Toast.show({
+          type: "error",
+          text1: "Failed to Create this",
+          text2: error.response.data.message,
+        });
+        Toast.show({
+          type: "error",
+          text1: "Failed to create TempID",
+        });
+      }
+      fetchTempDetails();
+    }
+  };
+
+  const cancelAction = () => {
+    // Implement the cancel action
+    console.log("Cancelling Action");
+    fetchTempDetails();
+  };
 
   const fetchTempDetails = async () => {
     setLoading(true);
@@ -33,7 +95,6 @@ const TempIDScreen = ({ route }) => {
       const response = await api.get(`/QR/get-temp-id?tempId=${tempId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log(response.data);
       if (response.data) {
         setTempDetails(response.data);
         setStatus(response.data.status);
@@ -45,7 +106,6 @@ const TempIDScreen = ({ route }) => {
         });
       }
     } catch (error) {
-      console.log(error);
       Toast.show({
         type: "error",
         text1: "Network Error",
@@ -59,7 +119,6 @@ const TempIDScreen = ({ route }) => {
   const getStatusOptions = () => {
     switch (status) {
       case "PENDING":
-        console.log("here");
         return [{ label: "CANCELLED", value: "CANCELLED" }];
       case "SUBMITTED":
         return [
@@ -87,16 +146,23 @@ const TempIDScreen = ({ route }) => {
             Phone Number: {tempDetails.phoneNumber}
           </Text>
           <Text style={styles.infoText}>Status: {tempDetails.status}</Text>
-          <RNPickerSelect
-            onValueChange={(value) => setNewStatus(value)}
-            items={getStatusOptions()}
-            placeholder={{ label: "Change status...", value: null }}
-            style={pickerSelectStyles}
-            useNativeAndroidPickerStyle={false}
-            Icon={() => {
-              return <Icon name="arrow-drop-down" size={24} color="gray" />;
-            }}
-          />
+          {status === "SUBMITTED" && (
+            <Button
+              buttonStyle={{ backgroundColor: "green" }} // Style for COMPLETE button
+              icon={<Icon name="check" size={20} color="white" />}
+              title=" COMPLETE"
+              onPress={() => confirmAction("COMPLETE")}
+            />
+          )}
+          {(status === "SUBMITTED" || status === "PENDING") && (
+            <Button
+              buttonStyle={{ backgroundColor: "red" }} // Style for CANCEL button
+              icon={<Icon name="cancel" size={20} color="white" />}
+              title=" CANCEL"
+              onPress={() => confirmAction("CANCEL")}
+            />
+          )}
+
           <Button
             icon={<Icon name="refresh" size={20} color="white" />}
             title=" Refresh"
@@ -109,6 +175,10 @@ const TempIDScreen = ({ route }) => {
     </ScrollView>
   );
 };
+
+// Continue with the existing styles...
+
+export default TempIDScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -154,5 +224,3 @@ const pickerSelectStyles = {
     backgroundColor: "white",
   },
 };
-
-export default TempIDScreen;
